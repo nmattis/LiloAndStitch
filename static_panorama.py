@@ -4,31 +4,78 @@ Nick Mattis
 
 Following: https://www.pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
 """
-from stitcher import Stitcher
 import argparse
-import imutils
+import os
+import sys
+from random import shuffle
+
 import cv2
+import imutils
+
+from fallback_stitcher import FallBackStitcher
+
+
+def get_image_list(directory):
+    images = []
+    for img in os.listdir(directory):
+        path = os.path.join(directory, img)
+        images.append(path)
+
+    return images
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-f", "--first", required=True, help="path to the first image")
-    ap.add_argument("-s", "--second", required=True, help="path to the second image")
-    args = vars(ap.parse_args())
+    ap.add_argument("-d", "--dir", required=True, help="directory of images to stitch together")
+    ap.add_argument("-r", "--rand", help="randomize the image list for testing arbitrary order", action="store_true")
+    ap.add_argument("-t", "--test", help="if testing flag is set extra images will be displayed", action="store_true")
+    ap.add_argument("-f", "--fall", help="if set will not use cv2 stitcher but our custom one", action="store_true")
+    args = ap.parse_args()
 
-    imgA = cv2.imread(args["first"])
-    imgB = cv2.imread(args["second"])
-    imgA = imutils.resize(imgA, width=400)
-    imgB = imutils.resize(imgB, width=400)
+    images = get_image_list(args.dir)
+    print("Found images: ", images)
 
-    stitch = Stitcher()
-    (result, vis) = stitch.stitch([imgA, imgB], showMatches=True)
+    if args.rand:
+        shuffle(images)
+        print("Shuffled images: ", images)
 
-    cv2.imshow("A", imgA)
-    cv2.imshow("B", imgB)
-    cv2.imshow("Keypoint", vis)
-    cv2.imshow("Res", result)
-    cv2.waitKey(0)
+    if len(images) < 2:
+        sys.exit("There needs to be at least two images to stitch.")
+
+    read_images = []
+    for image in images:
+        img = cv2.imread(image)
+        if args.test:
+            cv2.imshow(image, imutils.resize(img, height=400))
+        read_images.append(img)
+
+    print("Creating stitchers...")
+    stitcher = cv2.createStitcher(False)
+    fallBack = FallBackStitcher(images)
+
+    if not args.fall:
+        print("Trying to use the cv2 stitcher...")
+        result = stitcher.stitch(read_images)
+
+        if result[1] is not None:
+            print("Success!")
+            cv2.imshow('Result', imutils.resize(result[1], height=500))
+            cv2.waitKey(0)
+        else:
+            print("Not enough overlap for the cv2 stitcher, trying our fall back...")
+            # we need to use our fall back stitcher
+            result = fallBack.stitch()
+
+            print("Success!")
+            # cv2.imshow('Result', imutils.resize(result, height=500))
+            # cv2.waitKey(0)
+    else:
+        print("Forcing the use of our fall back stitcher...")
+        result = fallBack.stitch()
+
+        print("Success!")
+        # cv2.imshow('Result', imutils.resize(result, height=500))
+        # cv2.waitKey(0)
 
 
 if __name__ == '__main__':
