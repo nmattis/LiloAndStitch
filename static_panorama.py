@@ -12,7 +12,7 @@ from random import shuffle
 import cv2
 import imutils
 
-from fallback_stitcher import FallBackStitcher
+from fallback_stitcher import FallbackStitcher
 
 
 def get_image_list(directory):
@@ -64,16 +64,16 @@ def main():
         else:
             print("Not enough overlap for the cv2 stitcher, trying our fall back...")
             # we need to use our fall back stitcher
-            result = fallBack.stitch()
+            # result = fallBack.stitch()
 
-            print("Success!")
+            # print("Success!")
             # cv2.imshow('Result', imutils.resize(result, height=500))
             # cv2.waitKey(0)
     else:
         print("Forcing the use of our fall back stitcher...")
-        result = fallBack.stitch()
+        # result = fallBack.stitch()
 
-        print("Success!")
+        # print("Success!")
         # cv2.imshow('Result', imutils.resize(result, height=500))
         # cv2.waitKey(0)
 
