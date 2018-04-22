@@ -51,7 +51,7 @@ def main():
 
     print("Creating stitchers...")
     stitcher = cv2.createStitcher(False)
-    fallBack = FallBackStitcher(images)
+    # fallBack = FallbackStitcher(images)
 
     if not args.fall:
         print("Trying to use the cv2 stitcher...")
