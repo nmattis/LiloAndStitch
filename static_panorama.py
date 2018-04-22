@@ -50,6 +50,7 @@ def main():
         read_images.append(img)
 
     print("Creating stitchers...")
+    cv2.ocl.setUseOpenCL(False)
     stitcher = cv2.createStitcher(False)
     # fallBack = FallbackStitcher(images)
 
