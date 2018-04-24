@@ -1,13 +1,14 @@
 """
 stitcher.py
 
+Class for performing static image panorama creation.
 Reference: https://www.pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
 """
 import cv2
 import imutils
 import numpy as np
 
-class Stitcher:
+class ImageStitcher:
     def __init__(self, use_opencl):
         # determine if we are using OpenCV v3
         self.isv3 = imutils.is_cv3()
@@ -35,11 +36,7 @@ class Stitcher:
         else:
             print("Not enough overlap for the cv2 stitcher, trying our fall back...")
             # we need to use our fall back stitcher
-            result = self.stitch_images(images)
-
-            print("Success!")
-            cv2.imshow('Result', imutils.resize(result, height=500))
-            cv2.waitKey(0)
+            self.stitch_images(images)
 
     def stitch_images(self, images):
         """
@@ -60,7 +57,9 @@ class Stitcher:
         for img in list(images.keys())[2:]:
             result = self.stitch([result, images[img]])
 
-        return result
+        print("Success!")
+        cv2.imshow('Result', imutils.resize(result, height=500))
+        cv2.waitKey(0)
 
     def stitch(self, images, ratio=0.75, reprojThresh=4.0, showMatches=False):
         """
