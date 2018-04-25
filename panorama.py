@@ -28,6 +28,8 @@ def parser_define():
     ap.add_argument("-vidd", "--vid_file", help="path to video to turn into a panorama")
     ap.add_argument("-t", "--test", help="if testing flag is set extra images will be displayed", action="store_true")
     ap.add_argument("-f", "--fall", help="if set will not use cv2 stitcher but our custom one", action="store_true")
+    ap.add_argument("-ns", "--use_sampling", help="if set will use naive sampling for the video panoram", action="store_true")
+    ap.add_argument("-ds", "--use_deltas", help="if set will use delta sampling for the video panoram", action="store_true")
 
     return ap
 
@@ -82,15 +84,15 @@ def image_stitching(directory, test_flag, fallback_flag):
         static_stitcher.stitch_images(read_images)
 
 
-def video_stitching(video):
+def video_stitching(video, use_sampling, use_deltas):
     """
     Performs panorama creation from a video file.
 
     Params:
         video (str): path to video file
     """
-    video_stitcher = VideoStitcher(50, False)
-    video_stitcher.stitch(video)
+    video_stitcher = VideoStitcher()
+    video_stitcher.stitch(video, use_sampling, use_deltas)
 
 
 def main():
@@ -111,7 +113,7 @@ def main():
 
     if args.vid_file:
         print("Performing video stitching...")
-        video_stitching(args.vid_file)
+        video_stitching(args.vid_file, args.use_sampling, args.use_deltas)
         sys.exit("Done! Terminating Program.")
 
 

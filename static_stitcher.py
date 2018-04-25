@@ -8,6 +8,7 @@ import cv2
 import imutils
 import numpy as np
 
+
 class ImageStitcher:
     def __init__(self, use_opencl):
         # determine if we are using OpenCV v3
