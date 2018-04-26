@@ -26,18 +26,14 @@ class ImageStitcher:
 
         Params:
             images (dict): dict of image name and numpy array read in images
+
+        Returns the resulting stitched image.
         """
         print("Trying to use the cv2 stitcher...")
         result = self.cv2_stitcher.stitch(list(images.values()))
 
-        if result[1] is not None:
-            print("Success!")
-            cv2.imshow('Result', imutils.resize(result[1], height=500))
-            cv2.waitKey(0)
-        else:
-            print("Not enough overlap for the cv2 stitcher, trying our fall back...")
-            # we need to use our fall back stitcher
-            self.stitch_images(images)
+        return result
+
 
     def stitch_images(self, images):
         """
@@ -58,9 +54,7 @@ class ImageStitcher:
         for img in list(images.keys())[2:]:
             result = self.stitch([result, images[img]])
 
-        print("Success!")
-        cv2.imshow('Result', imutils.resize(result, height=500))
-        cv2.waitKey(0)
+        return result
 
     def stitch(self, images, ratio=0.75, reprojThresh=4.0, showMatches=False):
         """

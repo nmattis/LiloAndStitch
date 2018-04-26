@@ -12,28 +12,51 @@ import numpy as np
 
 
 class VideoStitcher:
-    def __init__(self, sample_rate=50, delta_thresh=0.15, use_opencl=False):
+    def __init__(self, sample_rate, delta_thresh, use_opencl):
         self.sample_rate = sample_rate
         self.delta_thresh = delta_thresh
         cv2.ocl.setUseOpenCL(use_opencl)
         self.cv2_stitcher = cv2.createStitcher(False)
 
-    def stitch(self, video, frame_sampling, frame_deltas):
+    def static_stitch(self, video_dir):
+        pass
+
+    def sweep_stitch(self, video, use_sampling, use_deltas):
         vid_cap = cv2.VideoCapture(video)
 
-        if frame_sampling and frame_deltas:
-            # do both in some way
-            return
+        if use_sampling and use_deltas:
+            print("Delta Thresh = " + str(self.delta_thresh))
+            print("Sampling Rate = " + str(self.sample_rate))
+            d_sampled, d_total_frames, d_frames = self.frame_deltas(vid_cap)
 
-        if frame_sampling:
-            print("Sampling Frames Randomly...")
-            sampled, total_frames, frames = frame_sampling(vid_cap)
+            total_count = 0
+            frames = []
+            for frame in d_frames:
+                if total_count % self.sample_rate == 0:
+                    frames.append(frame)
+                total_count += 1
+
+            print("Sampled deltas: " + str(d_sampled))
+            print("Final Sampling: " + str(len(frames)))
+            print("Total frames: " + str(d_total_frames))
+
+            if frames is None:
+                sys.exit("Something when way wrong and we don't have any frames.")
+
+            print("Using cv2 stitcher to create panorama...")
+            result = self.cv2_stitcher.stitch(frames)
+
+            return result
+
+        if use_sampling:
+            print("Sampling Frames Randomly... FS = " + str(self.sample_rate))
+            sampled, total_frames, frames = self.frame_sampling(vid_cap)
             print("Total Sampled Frame Count: ", str(sampled))
             print("Total Count: ", str(total_frames))
         
-        if frame_deltas:
-            print("Sampling Frames Using Deltas...")
-            sampled, total_frames, frames = frame_deltas(vid_cap)
+        if use_deltas:
+            print("Sampling Frames Using Deltas... Thresh = " + str(self.delta_thresh))
+            sampled, total_frames, frames = self.frame_deltas(vid_cap)
             print("Total Sampled Frame Count: ", str(sampled))
             print("Total Count: ", str(total_frames))
         
@@ -43,12 +66,8 @@ class VideoStitcher:
 
         print("Using cv2 stitcher to create panorama...")
         result = self.cv2_stitcher.stitch(frames)
-        if result[1] is not None:
-            print("Success!")
-            cv2.imshow('Result', imutils.resize(result[1], height=500))
-            cv2.waitKey(0)
-        else:
-            print("Failure")
+
+        return result
 
     def frame_sampling(self, vid_cap):
         sample_count = 0
@@ -57,8 +76,8 @@ class VideoStitcher:
         while True:
             success, image = vid_cap.read()
             if success and total_count % self.sample_rate == 0:
-                rows, cols, _ = image.shape
                 # this only here for the test video, should remove with a different vid
+                rows, cols, _ = image.shape
                 M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
                 frame = cv2.warpAffine(image, M, (cols, rows))
                 frames.append(frame)
@@ -79,8 +98,8 @@ class VideoStitcher:
             success, image = vid_cap.read()
             if success:
                 total_count += 1
-                rows, cols, _ = image.shape
                 # this only here for the test video, should remove with a different vid
+                rows, cols, _ = image.shape
                 M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
                 frame = cv2.warpAffine(image, M, (cols, rows))
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

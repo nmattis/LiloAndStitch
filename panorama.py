@@ -25,7 +25,8 @@ def parser_define():
     """
     ap = argparse.ArgumentParser()
     ap.add_argument("-imgd", "--image_dir", help="directory of images to stitch together")
-    ap.add_argument("-vidd", "--vid_file", help="path to video to turn into a panorama")
+    ap.add_argument("-vidf", "--vid_file", help="path to video to turn into a panorama")
+    ap.add_argument("-vidd", "--vid_dir", help="directory of videos to stitch together")
     ap.add_argument("-t", "--test", help="if testing flag is set extra images will be displayed", action="store_true")
     ap.add_argument("-f", "--fall", help="if set will not use cv2 stitcher but our custom one", action="store_true")
     ap.add_argument("-ns", "--use_sampling", help="if set will use naive sampling for the video panoram", action="store_true")
@@ -74,14 +75,22 @@ def image_stitching(directory, test_flag, fallback_flag):
         read_images[image] = img
 
     # create our static image stitcher and tell it not to use opencl
-    static_stitcher = ImageStitcher(False)
+    static_stitcher = ImageStitcher(True)
 
     if not fallback_flag:
-        print("Trying to use the cv2 stitcher...")
-        static_stitcher.cv2_stitch(read_images)
+        result = static_stitcher.cv2_stitch(read_images)
+        if result[1] is not None:
+            print("Success!")
+            cv2.imshow('Result', imutils.resize(result[1], height=600))
+            cv2.waitKey(0)
+        else:
+            print("Failed!")
     else:
         print("Forcing the use of our fall back stitcher...")
-        static_stitcher.stitch_images(read_images)
+        result = static_stitcher.stitch_images(read_images)
+        print("Success!")
+        cv2.imshow('Result', imutils.resize(result, height=600))
+        cv2.waitKey(0)
 
 
 def video_stitching(video, use_sampling, use_deltas):
@@ -91,8 +100,17 @@ def video_stitching(video, use_sampling, use_deltas):
     Params:
         video (str): path to video file
     """
-    video_stitcher = VideoStitcher()
-    video_stitcher.stitch(video, use_sampling, use_deltas)
+    if not use_sampling and not use_deltas:
+        sys.exit("You must specify a sampling type to run the sweeping video stitch.")
+
+    video_stitcher = VideoStitcher(7, 0.15, True)
+    result = video_stitcher.sweep_stitch(video, use_sampling, use_deltas)
+    if result[1] is not None:
+        print("Success!")
+        cv2.imshow('Result', imutils.resize(result[1], height=600))
+        cv2.waitKey(0)
+    else:
+        print("Failed!")
 
 
 def main():
