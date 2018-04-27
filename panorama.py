@@ -35,7 +35,7 @@ def parser_define():
     return ap
 
 
-def get_image_list(directory):
+def get_list(directory):
     """
     Gets all images in the given directory.
 
@@ -61,7 +61,7 @@ def image_stitching(directory, test_flag, fallback_flag):
     Params:
         directory (str): path to images
     """
-    images = get_image_list(directory)
+    images = get_list(directory)
     print("Found images: ", images)
 
     if len(images) < 2:
@@ -93,24 +93,28 @@ def image_stitching(directory, test_flag, fallback_flag):
         cv2.waitKey(0)
 
 
-def video_stitching(video, use_sampling, use_deltas):
+def video_stitching(video, isSweeping, use_sampling, use_deltas):
     """
     Performs panorama creation from a video file.
 
     Params:
         video (str): path to video file
     """
-    if not use_sampling and not use_deltas:
+    if not use_sampling and not use_deltas and isSweeping:
         sys.exit("You must specify a sampling type to run the sweeping video stitch.")
 
     video_stitcher = VideoStitcher(7, 0.15, True)
-    result = video_stitcher.sweep_stitch(video, use_sampling, use_deltas)
-    if result[1] is not None:
-        print("Success!")
-        cv2.imshow('Result', imutils.resize(result[1], height=600))
-        cv2.waitKey(0)
+    if isSweeping:
+        result = video_stitcher.sweep_stitch(video, use_sampling, use_deltas)
+        if result[1] is not None:
+            print("Success!")
+            cv2.imshow('Result', imutils.resize(result[1], height=600))
+            cv2.waitKey(0)
+        else:
+            print("Failed!")
     else:
-        print("Failed!")
+        videos = get_list(video)
+        video_stitcher.static_stitch(videos)
 
 
 def main():
@@ -121,7 +125,7 @@ def main():
     ap = parser_define()
     args = ap.parse_args()
 
-    if not args.image_dir and not args.vid_file:
+    if not args.image_dir and not args.vid_file and not args.vid_dir:
         sys.exit("Must specify images or video to use to create a panorama.")
 
     if args.image_dir:
@@ -131,7 +135,12 @@ def main():
 
     if args.vid_file:
         print("Performing video stitching...")
-        video_stitching(args.vid_file, args.use_sampling, args.use_deltas)
+        video_stitching(args.vid_file, True, args.use_sampling, args.use_deltas)
+        sys.exit("Done! Terminating Program.")
+
+    if args.vid_dir:
+        print("Performing static video stitching...")
+        video_stitching(args.vid_dir, False, args.use_sampling, args.use_deltas)
         sys.exit("Done! Terminating Program.")
 
 
