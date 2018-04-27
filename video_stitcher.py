@@ -31,7 +31,6 @@ class VideoStitcher:
             while True:
                 success, image = cap.read()
                 if success:
-                    # this only here for the test video, should remove with a different vid
                     rows, cols, _ = image.shape
                     M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
                     frame = cv2.warpAffine(image, M, (cols, rows))
@@ -44,30 +43,53 @@ class VideoStitcher:
                 min_frame_cap = cap_name
                 min_frame_count = cap_frame_count
 
-        # # Define the codec and create VideoWriter object
-        # fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-        height_t = int(captures[min_frame_cap].get(3))
-        width_t = int(captures[min_frame_cap].get(4))
-        # print(height, width)
-        # out = cv2.VideoWriter('output.avi',fourcc, 30.0, (height, width))
-        # for i in range(min_frame_count):
-        #     print("Frame #", i)
-        #     image = frames[min_frame_cap][i]
-        #     cv2.imshow(str(i), image)
-        #     cv2.waitKey(1)
-        #     out.write(image)
-
+        video_images = []
         for i in range(min_frame_count):
             images = [v[i] for k, v in frames.items()]
             result = self.cv2_stitcher.stitch(images)
             if result[1] is not None:
                 print("Success!")
+                video_images.append(result[1])
                 # write out the frame
                 # out.write(result[1])
-                cv2.imshow('Result' + str(i), imutils.resize(result[1], height=height_t, width=width_t))
-                cv2.waitKey(1)
+                # cv2.imshow('Result' + str(i), imutils.resize(result[1], height=height_t, width=width_t))
+                # cv2.waitKey(1)
             else:
                 print("Failed!")
+                crop = []
+                for image in images:
+                    img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    # mask all non-black pixels
+                    mask = img > 0
+                    # get the coords of black pixels
+                    coords = np.argwhere(mask)
+
+                    # bounding box of black pixels
+                    x0, y0 = coords.min(axis=0)
+                    x1, y1 = coords.max(axis=0) + 1
+
+                    # contents of bounding box
+                    cropped = image[x0:x1, y0:y1]
+                    crop.append(cropped)
+
+                # stack image list horzontally
+                result = np.hstack(crop)
+                video_images.append(result)
+                # cv2.imshow('Result horz', test_horizontal)
+                # cv2.imshow('Result crop', test_crop_h)
+                # cv2.waitKey(1)
+
+        for res_frame in video_images:
+            print(res_frame.shape)
+        # # Define the codec and create VideoWriter object
+        # fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+        # # height_t = int(captures[min_frame_cap].get(3))
+        # # width_t = int(captures[min_frame_cap].get(4))
+        # # print(height_t, width_t)
+        # out = cv2.VideoWriter('output.avi',fourcc, 30.0, (2160, 720))
+
+        # for fr in video_images:
+        #     out.write(fr)
 
         for name, cap in captures.items():
             cap.release()
@@ -128,7 +150,6 @@ class VideoStitcher:
         while True:
             success, image = vid_cap.read()
             if success and total_count % self.sample_rate == 0:
-                # this only here for the test video, should remove with a different vid
                 rows, cols, _ = image.shape
                 M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
                 frame = cv2.warpAffine(image, M, (cols, rows))
@@ -150,7 +171,6 @@ class VideoStitcher:
             success, image = vid_cap.read()
             if success:
                 total_count += 1
-                # this only here for the test video, should remove with a different vid
                 rows, cols, _ = image.shape
                 M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
                 frame = cv2.warpAffine(image, M, (cols, rows))
