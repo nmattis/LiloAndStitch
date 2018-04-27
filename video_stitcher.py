@@ -19,6 +19,13 @@ class VideoStitcher:
         self.cv2_stitcher = cv2.createStitcher(False)
 
     def static_stitch(self, videos):
+        """
+        Takes in multiple videos and tries to create one video of them stitched
+        together. Outputs the resulting video to a file.
+
+        Params:
+            videos (lst): list of paths to video files
+        """
         captures = {} 
         for vid in videos:
             captures[vid] = cv2.VideoCapture(vid)
@@ -59,10 +66,6 @@ class VideoStitcher:
                     max_width = result[1].shape[1]
                 if max_height < result[1].shape[0]:
                     max_height = result[1].shape[0]
-                # write out the frame
-                # out.write(result[1])
-                # cv2.imshow('Result' + str(i), imutils.resize(result[1], height=height_t, width=width_t))
-                # cv2.waitKey(1)
             else:
                 fail_count += 1
                 crop = []
@@ -88,18 +91,12 @@ class VideoStitcher:
                     max_width = result.shape[1]
                 if max_height < result.shape[0]:
                     max_height = result.shape[0]
-                # cv2.imshow('Result horz', test_horizontal)
-                # cv2.imshow('Result crop', test_crop_h)
-                # cv2.waitKey(1)
 
         print("Total successful stitches ", success_count)
         print("Total failed stitches ", fail_count)
         print("Creating video... with dimensions: ", max_width, max_height)
         # Define the codec and create VideoWriter object
         fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-        # height_t = int(captures[min_frame_cap].get(3))
-        # width_t = int(captures[min_frame_cap].get(4))
-        # print(height_t, width_t)
         out = cv2.VideoWriter('output.avi',fourcc, 30.0, (max_width, max_height))
         for res_frame in video_images:
             sized_frame = cv2.resize(res_frame, (max_width, max_height))
@@ -111,6 +108,19 @@ class VideoStitcher:
         out.release()
 
     def sweep_stitch(self, video, use_sampling, use_deltas):
+        """
+        Creates a static panorma image from a video that pans left to right. Either uses
+        frame rate sampling, delta between frame sampling, or both since we can't just
+        pass the entire video into the stitcher.
+
+        Params:
+            video (str): path to the left to right paning video
+            use_sampling (boolean): use frame rate sampling for panorama
+            use_deltas (boolean): use frame deltas for panorama
+
+        Returns:
+            The resulting stitched panorama.
+        """
         vid_cap = cv2.VideoCapture(video)
 
         if use_sampling and use_deltas:
@@ -159,6 +169,18 @@ class VideoStitcher:
         return result
 
     def frame_sampling(self, vid_cap):
+        """
+        Takes a video capture object and samples frames at a specified frame
+        rate.
+
+        Params:
+            vid_cap (cv2 VideoCapture): video to check frame deltas of
+        
+        Returns:
+            sampled frame count
+            total video frame count
+            the numpy sampled frames
+        """
         sample_count = 0
         total_count = 0
         frames = []
@@ -177,6 +199,19 @@ class VideoStitcher:
         return sample_count, total_count, frames
 
     def frame_deltas(self, vid_cap):
+        """
+        Takes in a video capture object an dgoes frame by frame checking the
+        absolute difference between them and only taking the frames that are different
+        enough within a given threshold.
+
+        Params:
+            vid_cap (cv2 VideoCapture): video to check frame deltas of
+        
+        Returns:
+            unique frame count
+            total video frame count
+            the numpy unique frames themselves
+        """
         total_count = 0
         unique_count = 0
         prev_frame = None
