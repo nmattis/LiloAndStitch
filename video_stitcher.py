@@ -44,18 +44,27 @@ class VideoStitcher:
                 min_frame_count = cap_frame_count
 
         video_images = []
+        max_width = 0
+        max_height = 0
+        success_count = 0
+        fail_count = 0
+        print("Stitching...")
         for i in range(min_frame_count):
             images = [v[i] for k, v in frames.items()]
             result = self.cv2_stitcher.stitch(images)
             if result[1] is not None:
-                print("Success!")
+                success_count += 1
                 video_images.append(result[1])
+                if max_width < result[1].shape[1]:
+                    max_width = result[1].shape[1]
+                if max_height < result[1].shape[0]:
+                    max_height = result[1].shape[0]
                 # write out the frame
                 # out.write(result[1])
                 # cv2.imshow('Result' + str(i), imutils.resize(result[1], height=height_t, width=width_t))
                 # cv2.waitKey(1)
             else:
-                print("Failed!")
+                fail_count += 1
                 crop = []
                 for image in images:
                     img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -75,25 +84,31 @@ class VideoStitcher:
                 # stack image list horzontally
                 result = np.hstack(crop)
                 video_images.append(result)
+                if max_width < result.shape[1]:
+                    max_width = result.shape[1]
+                if max_height < result.shape[0]:
+                    max_height = result.shape[0]
                 # cv2.imshow('Result horz', test_horizontal)
                 # cv2.imshow('Result crop', test_crop_h)
                 # cv2.waitKey(1)
 
+        print("Total successful stitches ", success_count)
+        print("Total failed stitches ", fail_count)
+        print("Creating video... with dimensions: ", max_width, max_height)
+        # Define the codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+        # height_t = int(captures[min_frame_cap].get(3))
+        # width_t = int(captures[min_frame_cap].get(4))
+        # print(height_t, width_t)
+        out = cv2.VideoWriter('output.avi',fourcc, 30.0, (max_width, max_height))
         for res_frame in video_images:
-            print(res_frame.shape)
-        # # Define the codec and create VideoWriter object
-        # fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-        # # height_t = int(captures[min_frame_cap].get(3))
-        # # width_t = int(captures[min_frame_cap].get(4))
-        # # print(height_t, width_t)
-        # out = cv2.VideoWriter('output.avi',fourcc, 30.0, (2160, 720))
-
-        # for fr in video_images:
-        #     out.write(fr)
+            sized_frame = cv2.resize(res_frame, (max_width, max_height))
+            # print(test.shape)
+            out.write(sized_frame)
 
         for name, cap in captures.items():
             cap.release()
-        # out.release()
+        out.release()
 
     def sweep_stitch(self, video, use_sampling, use_deltas):
         vid_cap = cv2.VideoCapture(video)
