@@ -3,7 +3,14 @@ CV Project for creating a panorama from a set of arbitrary videos from different
 
 To run the project just clone and run ```pip install -r requirements.txt```
 
+All data sets used can be found in ```/images``` or ```/videos```
+
+Various testing output results can be found in ```/results```
+
 ## Usage
+
+For best results use a data set of images that have at least a 20-30% overlap in image content and ensure that they are named in such a way that they are ordered from left to right. This is important if you choose to use our fallback stitcher implementation as it does not handle an arbitrary order. If just going to use the cv2 stitcher than order of images does not matter just overlap does.
+
 
 This program can stitch images, videos, and create a panorama from video.
 
