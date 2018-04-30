@@ -35,7 +35,7 @@ class ImageStitcher:
         return result
 
 
-    def stitch_images(self, images):
+    def stitch_images(self, images, draw_points):
         """
         Runs our handwritten stithcer with multiple images, stitches the first
         two images and then takes the result and stitches that to the next one
@@ -50,13 +50,13 @@ class ImageStitcher:
         imgA = images[imageA]
         imgB = images[imageB]
 
-        result = self.stitch([imgA, imgB])
+        result = self.stitch([imgA, imgB], draw_points)
         for img in list(images.keys())[2:]:
-            result = self.stitch([result, images[img]])
+            result = self.stitch([result, images[img]], draw_points)
 
         return result
 
-    def stitch(self, images, ratio=0.75, reprojThresh=4.0, showMatches=False):
+    def stitch(self, images, showMatches, ratio=0.75, reprojThresh=4.0):
         """
         Detects the features and keypoints using SIFT, matches those keypoints
         between the images to calculate and Homography matrix, then applies
@@ -76,8 +76,8 @@ class ImageStitcher:
         # take each image, detect keypoints and extract
         # local invariant descriptors from them
         print("Detecting Keypoints and Features...")
-        (kpsA, featuresA) = self.detectAndDescribe(imgA)
-        (kpsB, featuresB) = self.detectAndDescribe(imgB)
+        (kpsA, featuresA) = self.detectAndDescribe(imgA, showMatches)
+        (kpsB, featuresB) = self.detectAndDescribe(imgB, showMatches)
 
         # match features between the two images
         print("Matching Keypoints and Features...")
@@ -100,13 +100,15 @@ class ImageStitcher:
         if showMatches:
             vis = self.drawMatches(imgB, imgA, kpsB, kpsA, matches, status)
 
-            # return a tuple of the stiched image and the visualization
-            return (result, vis)
+            cv2.imshow('Vis', imutils.resize(vis, height=600))
+            cv2.waitKey(0)
+            # return stitched image
+            return result
         
         # return the stiched image
         return result
 
-    def detectAndDescribe(self, image):
+    def detectAndDescribe(self, image, drawPts=False):
         """
         Grayscales the image and uses SIFT to find keypoints and
         features of the image.
@@ -126,10 +128,20 @@ class ImageStitcher:
             descriptor = cv2.xfeatures2d.SIFT_create()
             (kps, features) = descriptor.detectAndCompute(image, None)
 
+            if drawPts:
+                ptImg = cv2.drawKeypoints(gray, kps, image.copy(), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                cv2.imshow('point image', imutils.resize(ptImg, height=600))
+                cv2.waitKey(0)
+
         # otherwise since not v3
         else:
             detector = cv2.FeatureDetector_create("SIFT")
             kps = detector.detect(gray)
+
+            if drawPts:
+                ptImg = cv2.drawKeypoints(gray, kps, image.copy())
+                cv2.imshow('point image', imutils.resize(ptImg, height=600))
+                cv2.waitKey(0)
 
             # extract features from the image
             extractor = cv2.DescriptorExtractor_create("SIFT")
@@ -205,6 +217,6 @@ class ImageStitcher:
             if s == 1:
                 ptA = (int(kpsA[queryIdx][0]), int(kpsA[queryIdx][1]))
                 ptB = (int(kpsB[queryIdx][0]) + wA, int(kpsB[queryIdx][1]))
-                cv2.line(vis, ptA, ptB, (0, 255, 0), 1)
+                cv2.line(vis, ptA, ptB, (0, 255, 0), 8)
         
         return vis

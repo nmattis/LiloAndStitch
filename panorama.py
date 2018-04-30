@@ -29,6 +29,7 @@ def parser_define():
     ap.add_argument("-vidd", "--vid_dir", help="directory of videos to stitch together")
     ap.add_argument("-t", "--test", help="if testing flag is set extra images will be displayed", action="store_true")
     ap.add_argument("-f", "--fall", help="if set will not use cv2 stitcher but our custom one", action="store_true")
+    ap.add_argument("-dp", "--draw_pts", help="if set will draw matched points", action="store_true")
     ap.add_argument("-ns", "--use_sampling", help="if set will use naive sampling for the video panoram", action="store_true")
     ap.add_argument("-ds", "--use_deltas", help="if set will use delta sampling for the video panoram", action="store_true")
 
@@ -53,7 +54,7 @@ def get_list(directory):
     return images
 
 
-def image_stitching(directory, test_flag, fallback_flag):
+def image_stitching(directory, test_flag, fallback_flag, draw_flag):
     """
     Performs static image stitching given a directory of image
     files to stitch together.
@@ -87,7 +88,7 @@ def image_stitching(directory, test_flag, fallback_flag):
             print("Failed!")
     else:
         print("Forcing the use of our fall back stitcher...")
-        result = static_stitcher.stitch_images(read_images)
+        result = static_stitcher.stitch_images(read_images, draw_flag)
         print("Success!")
         cv2.imshow('Result', imutils.resize(result, height=600))
         cv2.waitKey(0)
@@ -130,7 +131,7 @@ def main():
 
     if args.image_dir:
         print("Performing static image stitching...")
-        image_stitching(args.image_dir, args.test, args.fall)
+        image_stitching(args.image_dir, args.test, args.fall, args.draw_pts)
         sys.exit("Done! Terminating Program.")
 
     if args.vid_file:
